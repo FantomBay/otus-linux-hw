@@ -25,7 +25,7 @@ sudo yum-builddep -y /root/rpmbuild/SPECS/nginx.spec
 sudo yum install -y epel-release.noarch 
 yum-builddep nginx -y
 
-sudo wget -O /root/rpmbuild/SPECS/nginx.spec https://raw.githubusercontent.com/FantomBay/homework6/master/mod_spec_file.txt
+sudo wget -O /root/rpmbuild/SPECS/nginx.spec https://raw.githubusercontent.com/FantomBay/otus-linux/master/hw_6/mod_spec_file.txt
 
 sudo rpmbuild -ba /root/rpmbuild/SPECS/nginx.spec
 #локальная установка
