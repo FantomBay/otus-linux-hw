@@ -1,0 +1,104 @@
+1  Задание
+    1  zpool create my_storage mirror /dev/sdb /dev/sdc
+    2  zfs create my_storage/compres/gzip1
+    3  zfs create my_storage/compres/gzip
+    4  zfs create my_storage/compres
+    5  zfs create my_storage/compres/gzip
+    6  zfs create my_storage/compres/gzip9
+    7  zfs create my_storage/compres/lzjb
+    8  zfs create my_storage/compres/lz4
+    9  zfs set compression=gzip my_storage/compres/gzip
+   10  zfs set compression=gzip-9 my_storage/compres/gzip9
+   11  zfs set compression=on my_storage/compres/lzjb
+   12  zfs set compression=lz4 my_storage/compres/lz4
+   13  zfs get -t comression,comressratio
+   14  zfs get -t comression,comressratio my_storage/compres/
+   15  zfs get comression,comressratio
+   16  zfs get compressratio,compression
+   17  vi WarAndPeace.txt
+   18  curl https://www.gutenberg.org/files/2600/2600-0.txt > WarAndPeace.txt
+   19  vi WarAndPeace.txt
+   20  ls -lh WarAndPeace.txt
+   21  cp WarAndPeace.txt /my_storage/compres/*
+   22  cp WarAndPeace.txt /my_storage/compres/gzip
+   23  ls /my_storage/compres/gzip
+   24  cp WarAndPeace.txt /my_storage/compres/gzip9
+   25  cp WarAndPeace.txt /my_storage/compres/lz4
+   26  ls /my_storage/compres/
+   27  cp WarAndPeace.txt /my_storage/compres/lzjb/
+   28  zfs get compressratio,compression
+   29  ls /my_storage/compres/*
+   30  ls -l /my_storage/compres/*
+   31  ls -lh /my_storage/compres/*
+   32  cp WarAndPeace.txt /my_storage/compres/
+   33  zfs get compressratio,compression
+   34  vi typescript 
+   35  history 
+
+
+Сравнение алгоритмов:
+[root@server ~]# zfs get compressratio,compression
+NAME                      PROPERTY       VALUE     SOURCE
+my_storage                compressratio  1.67x     -
+my_storage                compression    off       default
+my_storage/compres        compressratio  1.68x     -
+my_storage/compres        compression    off       default
+my_storage/compres/gzip   compressratio  2.67x     -        <-лучшие
+my_storage/compres/gzip   compression    gzip      local
+my_storage/compres/gzip9  compressratio  2.67x     -        <-тоже так же
+my_storage/compres/gzip9  compression    gzip-9    local
+my_storage/compres/lz4    compressratio  1.62x     -
+my_storage/compres/lz4    compression    lz4       local
+my_storage/compres/lzjb   compressratio  1.62x     -
+my_storage/compres/lzjb   compression    on        local
+
+по итогу у меня получилось, что сжатие алгоритмом gzip - показало лучший результат.
+почемуто разницы между дефолтным gzip-6 и gzip-9 мне не показало. Почему?
+
+
+Часть 2 - Определить настройки pool’a
+
+[root@server ~]# zpool status
+pool: otus
+ state: DEGRADED
+status: One or more devices could not be opened.  Sufficient replicas exist for
+	the pool to continue functioning in a degraded state.
+action: Attach the missing device and online it using 'zpool online'.
+   see: http://zfsonlinux.org/msg/ZFS-8000-2Q
+  scan: none requested
+config:
+	NAME                      STATE     READ WRITE CKSUM
+	otus                      DEGRADED     0     0     0
+	  mirror-0                DEGRADED     0     0     0
+	    /root/filea           ONLINE       0     0     0
+	    12715741920600713412  UNAVAIL      0     0     0  was /root/zpoolexport/fileb
+errors: No known data errors
+
+[root@server ~]# zpool replace -f otus 12715741920600713412 $PWD/fileb
+
+[root@server ~]# zpool status otus
+  pool: otus
+ state: ONLINE
+  scan: resilvered 4.22M in 0 days 00:00:00 with 0 errors on Fri Aug 20 20:55:29 2021
+config:
+	NAME             STATE     READ WRITE CKSUM
+	otus             ONLINE       0     0     0
+	  mirror-0       ONLINE       0     0     0
+	    /root/filea  ONLINE       0     0     0
+	    /root/fileb  ONLINE       0     0     0
+errors: No known data errors
+
+Командами zfs определить настройки
+[root@server ~]# zfs get all otus
+- размер хранилища:350M
+- тип pool: mirror (команда: zpool status otus)
+- значение recordsize: 128K
+- какое сжатие используется: zle
+- какая контрольная сумма используется: sha256
+
+
+Часть 3
+
+[root@server ~]# zfs receive otus/storage < otus_task2.file 
+[root@server ~]# cat /otus/storage/task1/file_mess/secret_message 
+https://github.com/sindresorhus/awesome

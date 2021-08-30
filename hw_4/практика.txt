@@ -1,0 +1,416 @@
+ZFS - примеры команд
+
+file_system file_system - аналог LV - dataset's
+        \  /
+        POOL            - аналог VG
+    /    |      \
+sda     sdb      sdc    - аналог PV
+
+
+zpool status # посмотреть подробную инфу по пулам
+zfs list # посмотреть какие есть ФС\FS (dataset's)
+
+zpool destroy pull_name # удалить пул (вас не спросят да\нет - ОСТОРОЖНО!!!)
+
+zpool remove <pool_name> <device> # удалить из пула устройство.
+
+zpool create name_pool /dev/sdb /dev/sdc # так по умолчанию создается strype (по смыслу схож с RAID0) из устройств (sdb, sdc) т.е. суммируются объемы
+  pool: name_pool
+ state: ONLINE
+  scan: none requested
+config:
+
+	NAME        STATE     READ WRITE CKSUM
+	name_pool   ONLINE       0     0     0
+	  sdb       ONLINE       0     0     0
+	  sdc       ONLINE       0     0     0
+
+
+zpool create pull_name mirror /dev/sdb /dev/sdc #пул типа mirror из дисков /dev/sdb /dev/sdc 
+
+zpool create pull_name raidz1 /dev/sdb /dev/sdc # создает пул типа raidz1, где 1-кол-во дисков которые могут выйти из строя
+или
+zpool create raid raidz1 $PWD/disk[1-3] # (для примера) создать пул типа raidz1 из 3 дисков (устройств), если устройств будет не достаточно для данного вида - вас предупредят
+
+zpool create pull_name mirror $PWD/disk[12] mirror $PWD/disk[34] # Гибрид из 2 зеркальных пулов, вместо зеркала могут быть raidz
+Получаем:
+  pool: pull_name
+ state: ONLINE
+  scan: none requested
+config:
+
+	NAME             STATE     READ WRITE CKSUM
+	pull_name        ONLINE       0     0     0
+	  mirror-0       ONLINE       0     0     0
+	    /root/disk1  ONLINE       0     0     0
+	    /root/disk2  ONLINE       0     0     0
+	  mirror-1       ONLINE       0     0     0
+	    /root/disk3  ONLINE       0     0     0
+	    /root/disk4  ONLINE       0     0     0
+
+ashift - степень двойки, этот параметр указывает размер сектора на диске (ВАЖНО!-этот параметр задается 1 раз при создании, в процессе поменять нельзя)
+2^13 = 8,192 байт - устанавливается для дисков SSD c размером сектора 8K
+2^12 = 4,096 байт - это рекомендуемое значение
+2^9 = 512 байт
+
+КЭШ: нужен что бы в случае сбоя еще больше обезопасить от потерь
+- SLOG(storage log)-кэш на запись ;желательно делать на mirror пуле\диске и желательно ssd\sas-15k
+- ARC()-кэш на чтение (оперативе) ;сжирает до 50%оперативы
+- L2ARC-кэш на чтение (на быстрых дисках ssd\sas-15k)
+
+Создание фаловой системы (dataset): все что создается поверх пула
+
+zfs create pool_name/dataset
+т.е.
+zfs create my_storage/userdir - создаем файловую систему userdir в пуле устройств  my_storage
+
+ФС может быть вложеной:
+zfs create my_storage/data/video
+zfs create my_storage/data/music
+
+
+Параметры FS\ФС (dataset)
+
+zfs get all my_storage/data/video -посмотреть все параметры ФС
+
+по умолчанию все монтируется в дерикторию пула, что бы это изменить - есть параметр mountpoint
+zfs set mountpoint=/home/testuser my_storage/data/music  -т.е. my_storage/data/music - смонтируется в /home/testuser
+это все будет выглядеть:
+
+[root@server ~]# findmnt -t zfs
+TARGET                     SOURCE                FSTYPE OPTIONS
+/my_storage                my_storage            zfs    rw,seclabel,xattr,noacl
+|-/my_storage/userdir      my_storage/userdir    zfs    rw,seclabel,xattr,noacl
+`-/my_storage/data         my_storage/data       zfs    rw,seclabel,xattr,noacl
+  `-/my_storage/data/video my_storage/data/video zfs    rw,seclabel,xattr,noacl
+/home/testuser             my_storage/data/music zfs    rw,seclabel,xattr,noacl
+
+Квоты для файловых систем:
+
+zfs get quota -посмотреть Квоты
+NAME                   PROPERTY  VALUE  SOURCE
+my_storage             quota     none   default
+my_storage/data        quota     none   default
+my_storage/data/music  quota     none   default
+my_storage/data/video  quota     none   default
+my_storage/userdir     quota     none   default
+
+zfs set quota=500M my_storage/data/music -ограничить занимаемое пространсво для FS my_storage/data/music, которая примонтированна в /home/testuser - до max=500М
+[root@server ~]# zfs get quota
+NAME                   PROPERTY  VALUE  SOURCE
+my_storage             quota     none   default
+my_storage/data        quota     none   default
+my_storage/data/music  quota     500M   local
+my_storage/data/video  quota     none   default
+my_storage/userdir     quota     none   default
+
+Резервирование места(гарантированный остаток):
+zfs set reservation=50M my_storage/data/video
+
+Можно указать для каждой ФС свой размер блока:
+zfs set recordsize=1M my_storage/data/video
+[root@server ~]# zfs get recordsize
+NAME                   PROPERTY    VALUE    SOURCE
+my_storage             recordsize  128K     default
+my_storage/data        recordsize  128K     default
+my_storage/data/music  recordsize  128K     default
+my_storage/data/video  recordsize  1M       local
+my_storage/userdir     recordsize  128K     default
+
+Наследование параметров:
+
+каждый созданный dataset наследует параметры предыдущего если только праметр не задать самому (local)
+
+[root@server ~]# zfs get checksum - по умолчанию все datasets имеют значение default
+                                                \/
+NAME                      PROPERTY  VALUE      SOURCE
+my_storage                checksum  on         default
+my_storage/data           checksum  on         default
+my_storage/data/movies    checksum  on         default
+my_storage/data/music     checksum  on         default
+my_storage/data/torrents  checksum  on         default
+my_storage/data/video     checksum  on         default
+my_storage/userdir        checksum  on         default
+
+zfs set checksum=sha256 my_storage/data/movies
+[root@server ~]# zfs get checksum
+NAME                      PROPERTY  VALUE      SOURCE
+my_storage                checksum  on         default
+my_storage/data           checksum  on         default
+my_storage/data/movies    checksum  sha256     local     <- заданный нами параметр, последующие fs будут наследовать его (sha256)
+my_storage/data/music     checksum  on         default
+my_storage/data/torrents  checksum  on         default
+my_storage/data/video     checksum  on         default
+my_storage/userdir        checksum  on         default
+
+zfs set checksum=skein my_storage/data # поменяли у data и все дефолтные значения чексумм унаследовали тип своего родителя
+[root@server ~]# zfs get checksum
+NAME                      PROPERTY  VALUE      SOURCE
+my_storage                checksum  on         default
+my_storage/data           checksum  skein      local                            <-
+my_storage/data/movies    checksum  sha256     local
+my_storage/data/music     checksum  skein      inherited from my_storage/data   <-
+my_storage/data/torrents  checksum  skein      inherited from my_storage/data   <-
+my_storage/data/video     checksum  skein      inherited from my_storage/data   <-
+my_storage/userdir        checksum  on         default
+
+
+Параметры кэширования: ARC, L2ARC
+zfs set primarycache={all|metadata|none} # ARC - кэш в памяти
+zfs set secondarycache={all|metadata|none} # L2ARC - кэш на быстрых дисках
+3 значения:
+– all - (default) выполняется кэширование данных пользователя и метаданных.
+– none - кэширование данных пользователя и метаданных не выполняется.
+– metadata - выполняется кэширование только метаданных
+
+# zfs set primarycache=metadata tank/datab          - использования свойств в текущей ФС (после создания, только новый ввод является кэшем)
+# zfs create -o primarycache=metadata tank/newdatab - использование свойств при создании ФС
+
+
+Cжатие:
+
+zfs create my_storage/src               <-НЕ сжатый dataset\FS
+zfs create my_storage/src/compressed    <-сжатый dataset
+
+[root@server ~]# zfs get compression,compressratio
+NAME                       PROPERTY       VALUE     SOURCE
+my_storage                 compression    off       default
+my_storage                 compressratio  1.00x     -
+my_storage/data            compression    off       default
+my_storage/data            compressratio  1.00x     -
+my_storage/data/movies     compression    off       default
+my_storage/data/movies     compressratio  1.00x     -
+my_storage/data/music      compression    off       default
+my_storage/data/music      compressratio  1.00x     -
+my_storage/data/torrents   compression    off       default
+my_storage/data/torrents   compressratio  1.00x     -
+my_storage/data/video      compression    off       default
+my_storage/data/video      compressratio  1.00x     -
+my_storage/src             compression    off       default
+my_storage/src             compressratio  1.00x     -
+my_storage/src/compressed  compression    on        local       <-значение компрессии "on"
+my_storage/src/compressed  compressratio  1.00x     -           <-степень сжатия
+my_storage/userdir         compression    off       default
+my_storage/userdir         compressratio  1.00x     -
+
+zfs set compression=on my_storage/src/compressed         <-включили компрессию, при данном способе включения компресии данные будут сжиматься по алгоритму "lzjb"
+
+Алгоритмы компрессии ZFS:
+-lzjb -(default)
+-gzip-N - (аналогично gzip) где N=[1-9], где 1-быстрый (слабо сжимает) 9-лучшая степень сжатия(падает скорость). Просто gzip=gzip-6
+-lz4
+
+что бы включить определенный тип компрессии используется команда след вида:
+zfs create my_storage/src/compressed9 <-создали dataset
+zfs set compression=gzip-9 my_storage/src/compressed9       <-включена наибольшая степень сжатия gzip-9.
+
+cp -R /etc/ /my_storage/src/compressed/     -скопируем в нашу дерикторию содеримое /etc/, и проверим как измениться компрессия
+cp -R /etc/ /my_storage/src/compressed9/    -*скорость копирования при данном типе сжатия заметно упала
+[root@server ~]# zfs get compression,compressratio
+NAME                        PROPERTY       VALUE     SOURCE
+my_storage                  compression    off       default
+my_storage                  compressratio  1.66x     -
+my_storage/data             compression    off       default
+my_storage/data             compressratio  1.00x     -
+my_storage/data/movies      compression    off       default
+my_storage/data/movies      compressratio  1.00x     -
+my_storage/data/music       compression    off       default
+my_storage/data/music       compressratio  1.00x     -
+my_storage/data/torrents    compression    off       default
+my_storage/data/torrents    compressratio  1.00x     -
+my_storage/data/video       compression    off       default
+my_storage/data/video       compressratio  1.00x     -
+my_storage/src              compression    off       default
+my_storage/src              compressratio  1.66x     -
+my_storage/src/compressed   compression    on        local          <-включено дефолтное сжатие алгоритмом (lzjb)
+my_storage/src/compressed   compressratio  2.49x     -              <-степень сжатия - lzjb
+my_storage/src/compressed9  compression    gzip-9    local      <-включено сжатие gzip-9
+my_storage/src/compressed9  compressratio  4.11x     -          <-степень сжатия увеличена
+my_storage/src/dedup        compression    off       default
+my_storage/src/dedup        compressratio  1.00x     -
+my_storage/userdir          compression    off       default
+my_storage/userdir          compressratio  1.00x     -
+
+
+Дедупликация:
+-если на диске есть совпадающие(одинаковые) блоки то сохраняется один из них а другой удаляется но на его месте появляется ссылка на сохраненный блок.
+Но есть нюансы:
+- это очень затратно по оперативе, т.к. все контрольные суммы этих блоков хранятся в памяти
+
+
+[root@server ~]# free -h
+              total        used        free      shared  buff/cache   available
+Mem:          979Mi       244Mi       159Mi        11Mi       575Mi       570Mi
+Swap:         2.0Gi       1.0Mi       2.0Gi
+zfs create my_storage/src/dedup    -создадим dataset "dedup"
+[root@server ~]# zfs get dedup my_storage/src/dedup
+NAME                  PROPERTY  VALUE          SOURCE
+my_storage/src/dedup  dedup     off            default      <-пока что дедупликация выключена
+
+zfs set dedup=on my_storage/src/dedup                   <-включили дедупликацию
+[root@server ~]# zfs get dedup my_storage/src/dedup
+NAME                  PROPERTY  VALUE          SOURCE
+my_storage/src/dedup  dedup     on             local        <-изменилось значение на "on"
+
+dd if=/dev/sda of=my_file bs=1M count=10        <-создадим файл на /dev/sda "my_file" с размером блока 1Мб и количеством блоков 10 шт
+10+0 records in
+10+0 records out
+10485760 bytes (10 MB, 10 MiB) copied, 0.097208 s, 108 MB/s
+cp my_file /my_storage/src/dedup/file1      <-скопируем этот файл 3 раза в нашу дерикторию с включенной дедупликацией
+cp my_file /my_storage/src/dedup/file2      <
+cp my_file /my_storage/src/dedup/file3      <
+
+zpool list   - посмотрим информацию о пулах
+NAME         SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT
+my_storage   480M  18.7M   461M        -         -     0%     3%  2.16x    ONLINE  -            <-дедупликация выросла в 2.16 раза
+
+free -h
+              total        used        free      shared  buff/cache   available
+Mem:          979Mi       258Mi       100Mi        11Mi       620Mi       556Mi                 <-осталось 100мб из 159 (не знаю на сколько это коректное сравнение)
+Swap:         2.0Gi       1.0Mi       2.0Gi
+
+
+Перенос дисков между хостами:
+
+zpool export my_storage     <-отключаем диски (z-пулы) перед переносом
+[root@server ~]# zpool status
+no pools available
+
+scp root@10.0.0.41:~/disk{1..2} ./zpoolexport/          <-попробуем перенести 2 диска из 3
+[root@client ~]# zpool import -d ${PWD}/zpoolexport/
+   pool: my_storage
+     id: 17996892022353683651
+  state: DEGRADED
+ status: One or more devices are missing from the system.
+ action: The pool can be imported despite missing or damaged devices.  The
+	fault tolerance of the pool may be compromised if imported.
+   see: http://zfsonlinux.org/msg/ZFS-8000-2Q
+ config:
+	my_storage                   DEGRADED
+	  mirror-0                   DEGRADED
+	    /root/zpoolexport/disk1  ONLINE
+	    /root/zpoolexport/disk2  ONLINE
+	    /root/disk3              UNAVAIL  cannot open           <-не удалось откыть 3 диск(его нет)
+
+zpool import -d ./zpoolexport/ my_storage
+[root@client ~]# zpool status
+  pool: my_storage
+ state: DEGRADED
+status: One or more devices could not be opened.  Sufficient replicas exist for
+	the pool to continue functioning in a degraded state.
+action: Attach the missing device and online it using 'zpool online'.
+   see: http://zfsonlinux.org/msg/ZFS-8000-2Q
+  scan: none requested
+config:
+
+	NAME                         STATE     READ WRITE CKSUM
+	my_storage                   DEGRADED     0     0     0
+	  mirror-0                   DEGRADED     0     0     0
+	    /root/zpoolexport/disk1  ONLINE       0     0     0
+	    /root/zpoolexport/disk2  ONLINE       0     0     0
+	    9508110276900200602      UNAVAIL      0     0     0  was /root/zpoolexport/disk3
+
+errors: No known data errors
+
+zpool import -d ./zpoolexport/ my_storage   <- импортируем все что у нас есть
+[root@client zpoolexport]# zpool status
+  pool: my_storage
+ state: DEGRADED
+status: One or more devices could not be opened.  Sufficient replicas exist for
+	the pool to continue functioning in a degraded state.
+action: Attach the missing device and online it using 'zpool online'.
+   see: http://zfsonlinux.org/msg/ZFS-8000-2Q                                   <-ссылка на документацию, где можно узнать как решить данную проблемму.
+  scan: none requested
+config:
+	NAME                         STATE     READ WRITE CKSUM
+	my_storage                   DEGRADED     0     0     0                                 <-пул дегродирован
+	  mirror-0                   DEGRADED     0     0     0
+	    /root/zpoolexport/disk1  ONLINE       0     0     0
+	    /root/zpoolexport/disk2  ONLINE       0     0     0
+	    9508110276900200602      UNAVAIL      0     0     0  was /root/zpoolexport/disk3    <-НЕДОСТУПНЫЙ <> был /root/zpoolexport/disk3
+
+touch disk4         -Добавим новый диск в систему disk4 (для примера добавим его как файл)
+ls -lh ./
+total 1000M
+-rw-r--r--. 1 root root 500M Aug 20 12:19 disk1
+-rw-r--r--. 1 root root 500M Aug 20 12:19 disk2
+-rw-r--r--. 1 root root    0 Aug 20 12:18 disk4         <-диск меньшего размера 0Мб
+
+zpool replace -f my_storage 9508110276900200602 $PWD/disk4  <-пробуем заменить потеряшку на disk4(меньшего размера)
+cannot replace 9508110276900200602 with /root/zpoolexport/disk4: device is too small    <-получаем ошибку что диск маленький.
+
+echo disk4 | xargs -n 1 fallocate -l 500M               <-увеличим его до 500М
+
+zpool replace -f my_storage 9508110276900200602 $PWD/disk4  <-пробуем заменить потеряшку теперь...
+[root@client zpoolexport]# zpool status
+  pool: my_storage
+ state: ONLINE
+  scan: resilvered 25.4M in 0 days 00:00:00 with 0 errors on Fri Aug 20 12:35:13 2021
+config:
+	NAME                         STATE     READ WRITE CKSUM
+	my_storage                   ONLINE       0     0     0
+	  mirror-0                   ONLINE       0     0     0
+	    /root/zpoolexport/disk1  ONLINE       0     0     0
+	    /root/zpoolexport/disk2  ONLINE       0     0     0
+	    /root/zpoolexport/disk4  ONLINE       0     0     0             <-видим наш 4 диск.
+errors: No known data errors                                            <-Успех.
+
+
+Снепшеты
+
+zfs create my_storage/text          <-для демонстрации создадим dataset "text" в пуле my_storage
+
+vi /my_storage/text/War_and_peace.txt                       <-для примера скопируем ВойнуИМир в файл  "War_and_peace.txt"
+[root@client zpoolexport]# zfs list
+NAME                         USED  AVAIL     REFER  MOUNTPOINT
+my_storage                  97.9M   275M       28K  /my_storage
+my_storage/data             50.1M   275M     26.5K  /my_storage/data
+my_storage/data/movies        24K   275M       24K  /my_storage/data/movies
+my_storage/data/music         24K   100M       24K  /home/testuser
+my_storage/data/torrents      24K   275M       24K  /my_storage/data/torrents
+my_storage/data/video         24K   325M       24K  /my_storage/data/video
+my_storage/src              44.3M   275M     26.5K  /my_storage/src
+my_storage/src/compressed   8.80M   275M     8.80M  /my_storage/src/compressed
+my_storage/src/compressed9  5.40M   275M     5.40M  /my_storage/src/compressed9
+my_storage/src/dedup        30.0M   275M     30.0M  /my_storage/src/dedup
+my_storage/text             3.15M   275M     3.15M  /my_storage/text             <-вот оно
+my_storage/userdir            24K   275M       24K  /my_storage/userdir
+
+zfs snapshot my_storage/text@snap001                 <-создаем снепшет, через @ указывается имя снепшета
+
+zfs list -t snapshot
+NAME                      USED  AVAIL     REFER  MOUNTPOINT
+my_storage/text@snap001     1K      -     3.15M  -
+
+md5sum /my_storage/text/War_and_peace.txt                   <-Проверим md5 сумму
+481eab79b1e6ca901756b41712aa48a1  /my_storage/text/War_and_peace.txt
+
+rm /my_storage/text/War_and_peace.txt
+rm: remove regular file '/my_storage/text/War_and_peace.txt'? y
+[root@client zpoolexport]# ls /my_storage/text/ -l
+total 0
+
+zfs rollback my_storage/text@snap001
+[root@client zpoolexport]# ls /my_storage/text/ -l
+total 3205
+-rw-r--r--. 1 root root 3226639 Aug 20 13:02 War_and_peace.txt
+
+md5sum /my_storage/text/War_and_peace.txt                       <-Проверим md5 сумму
+481eab79b1e6ca901756b41712aa48a1  /my_storage/text/War_and_peace.txt
+
+
+Перенос снепшетов с хоста на хоста
+
+zfs send my_storage/text@snap001 > snapshot         <-создадим бинарный файл с нашим снепшетом
+
+scp snapshot 10.0.0.41:                             <-перенесем снепшот на другой хост(10.0.0.41)
+
+zpool import -d $PWD/ my_storage  <-востановим на первом хосте ранее отсоединеный пулл 
+
+zfs receive my_storage/text < snapshot              <-востановимся из снепшета (необходимо указывать полную структуру каталогов)
+[root@server ~]# ls /my_storage/text/War_and_peace.txt 
+/my_storage/text/War_and_peace.txt
+[root@server ~]# md5sum /my_storage/text/War_and_peace.txt      <-md5 сумма совпадают
+481eab79b1e6ca901756b41712aa48a1  /my_storage/text/War_and_peace.txt
+
+вроде все, но не все)

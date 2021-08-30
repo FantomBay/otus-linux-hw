@@ -1,0 +1,98 @@
+NFS-NetworkFileSystem
+
+NFS=CIFS(win),SMB\Samba(win)
+
+yum install nfs-utils -y
+
+vi /etc/exports
+    /var/nfs_share/ *(rw)   <-какую дерикторию мы экспортируем для клиентов(/var/nfs_share/), 
+                            *-ip адресс клиента(*=all) все могут подключиться, 
+                            (опции) рассмотрим позже.
+    :wq
+
+exportfs -s         <-показывает файлы которые мы экспортируем
+exportfs -rav       <-r-перечитать файл настроек (/etc/exports), a-все ФС из файла настроек, -v-вывод на экран
+
+systemctl start nfs
+
+showmount -e        <-посмотреть экспортируемые сервером - ФайловыеС(--exports)
+showmount --exports
+
+rpcinfo         <- статус прослушивания служб (как бы верно истолковать?)
+
+для работы NFS сервера необходимы следующие демоны:
+-rpc.statd - (Network Status Monitor - NSM). Корректно снимает блокировку после сбоя/перезагрузки. Для уведомления о сбое использует программу /usr/sbin/sm-notify
+-rpc.idmapd - Для NFSv4 на сервере преобразует локальные uid/gid пользователей в формат вида имя@домен, а на клиенте обратно
+-rpc.mountd - отвечает за монтирование каталогов
+-rpc.nfsd - основной демон сервера
+-rpc.lockd - (NFS lock manager (NLM)) обрабатывает запросы на блокировку файлов, когда один и тот же файл использует один и тот же человек. (В современных ядрах не нужен)
+
+ps axf | grep nfs
+ps axf | grep rpc
+
+
+Опции импорта NFS(прописываются в /etc/exports):
+man exports 
+sec=(krb5,krb5i,krbp)   <-для NFSv4 для авторизации можно использовать протокол kerberos
+secure/insecure         <-запросы с портов (<1024 не требующие привелегий суперпользователя)
+ro/rw - read only, read write
+root_squash/no_root_squash - автоподмена владельца файла с root на анонимного пользователя
+all_squash - автоподмена на анонима для всех файлов
+anonuid=UID и anongid=GID - Явно задает UID/GID для анонимного пользователя.
+
+Example:
+vi /etc/exports
+    /var/nfs_demo/ro_opt/ *(ro) 
+    /var/nfs_demo/ro_no_root_squash/ *(rw,no_root_squash) 
+    /var/nfs_demo/all_squash/ *(rw,all_squash)
+    :wq
+exportfs -s         <-применяем изменения
+
+exportfs -r         <-restart
+
+umount -l /mount/dir            <-если зависло\пропало подключение к сетевой дериктории, --lazy поможет вам ее отмонтировать
+
+fusermount -u /mount/dir        <-позволяет отмонитровать ФС без root-прав.
+
+
+В данном примере мы создадим NFS шару с двумя каталогами внутри. Каталог upload имеет разрешения на запись и изменение внутри него. Каталог info имеет право редактировать только root на NFS сервере.
+SERVER:
+
+
+dnf install nfs-utils -y
+mkdir -p /var/nfs/info
+echo "/var/nfs/info/ *(ro)" > /etc/exports
+mkdir /var/nfs/upload
+echo "/var/nfs/upload/ *(rw,sync,no_root_squash,no_subtree_check)" >> /etc/exports
+
+mkdir /var/nfs/secret
+echo "/var/nfs/secret/ *(rw,sync,no_root_squash,no_subtree_check)" >> /etc/exports
+
+
+
+
+exportfs -rav 
+systemctl start nfs-server.service
+exportfs -s
+showmount -e
+#only NFSv3
+sed -i 's/# vers2=n/vers2=n/' /etc/nfs.conf
+sed -i 's/# vers3=y/vers3=y/' /etc/nfs.conf
+sed -i 's/# vers4=y/vers4=n/' /etc/nfs.conf
+sed -i 's/# vers4.0=y/vers4.0=n/' /etc/nfs.conf
+sed -i 's/# vers4.1=y/vers4.1=n/' /etc/nfs.conf
+sed -i 's/# vers4.2=y/vers4.2=n/' /etc/nfs.conf
+
+
+
+
+CLIENT
+
+mkdir /mnt/nfs_upload
+mkdir /mnt/nfs_info
+echo "10.0.0.41:/var/nfs/upload /mnt/nfs_upload nfs defaults 0 0" >> /etc/fstab
+echo "10.0.0.41:/var/nfs/info /mnt/nfs_info nfs defaults 0 0" >> /etc/fstab
+mount -a
+
+mkdir /mnt/secret
+mount -t nfs -o vers=3 10.0.0.41:/var/nfs_secret /mnt/secret

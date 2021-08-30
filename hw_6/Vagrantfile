@@ -1,0 +1,40 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'open3'
+require 'fileutils'
+
+Vagrant.configure("2") do |config|
+
+config.vm.define "server" do |server|
+  server.vm.box = 'centos/7'
+  server.vm.host_name = 'server'
+  server.vm.network :private_network, ip: "10.0.0.40"
+
+  server.vm.provider "virtualbox" do |vb|
+    vb.memory = "1024"
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+  end
+
+
+  server.vm.provision "shell",
+    name: "configuration",
+    path: "server.sh"
+  end
+
+
+  config.vm.define "repo" do |repo|
+    repo.vm.box = 'centos/7'
+    repo.vm.host_name = 'repo'
+    repo.vm.network :private_network, ip: "10.0.0.41"
+    
+    repo.vm.provider :virtualbox do |vb|
+      vb.memory = "1024"
+      vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    end
+
+    repo.vm.provision "shell",
+      name: "configuration",
+      path: "repo.sh"
+    end
+  end
