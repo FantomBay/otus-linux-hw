@@ -81,3 +81,45 @@ passwd
 
 ### 2. Установить систему с LVM, после чего переименовать VG.
 
+В качестве стенда возьмем Vagrant-файл из 3 домашнего задания, на котором уже имееются раделы на LVM.
+```
+[root@lvm ~]# lsblk
+NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                       8:0    0   40G  0 disk 
+├─sda1                    8:1    0    1M  0 part 
+├─sda2                    8:2    0    1G  0 part /boot
+└─sda3                    8:3    0   39G  0 part 
+  ├─VolGroup00-LogVol00 253:0    0 37.5G  0 lvm  /
+  └─VolGroup00-LogVol01 253:1    0  1.5G  0 lvm  [SWAP]
+```
+ Переименуем VG:
+```
+vgrename VolGroup00 vg_root
+```
+```
+[root@lvm ~]# lsblk
+NAME                 MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                    8:0    0   40G  0 disk 
+├─sda1                 8:1    0    1M  0 part 
+├─sda2                 8:2    0    1G  0 part /boot
+└─sda3                 8:3    0   39G  0 part 
+  ├─vg_root-LogVol00 253:0    0 37.5G  0 lvm  /
+  └─vg_root-LogVol01 253:1    0  1.5G  0 lvm  [SWAP]
+```
+Переименуем VG в конфигах, что бы мы могли загрузиться:
+
+```
+sed -i 's/VolGroup00/vg_root/g' /boot/grub2/grub.cfg 
+sed -i 's/VolGroup00/vg_root/g' /etc/fstab 
+sed -i 's/VolGroup00/vg_root/g' /etc/default/grub
+```
+
+```   
+cp /boot/initramfs-3.10.0-862.2.3.el7.x86_64.img /boot/initramfs-3.10.0-862.2.3.el7.x86_64.img.back
+```
+```
+mkinitrd -f -v /boot/initramfs-$(uname -r).img $(uname -r)
+```
+```
+reboot
+```
