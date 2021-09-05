@@ -9,8 +9,8 @@ yum-builddep -y rpmbuild/SPECS/nginx.spec
 #yum-builddep nginx -y
 yum install -y epel-release.noarch 
 yum-builddep -y nginx
-
-wget -O /root/rpmbuild/SPECS/nginx.spec https://raw.githubusercontent.com/FantomBay/homework6/master/mod_spec_file.txt
+#download modificated SPEC-file
+wget -O /root/rpmbuild/SPECS/nginx.spec https://raw.githubusercontent.com/FantomBay/otus-linux-hw/master/hw_6/mod_spec_file.txt
 
 rpmbuild -ba rpmbuild/SPECS/nginx.spec
 #локальная установка
