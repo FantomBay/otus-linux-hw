@@ -14,3 +14,4 @@
 * [Home work 5 - NFS, FUSE.](https://github.com/FantomBay/otus-linux/tree/master/hw_5)
 * [Home work 6 - Repositories, RPM.](https://github.com/FantomBay/otus-linux/tree/master/hw_6)
 * [Home work 7 - System load (init).](https://github.com/FantomBay/otus-linux/tree/master/hw_7)
+* [Home work 8 - Bash-shell, scripting.](https://github.com/FantomBay/otus-linux/tree/master/hw_8)
