@@ -1,0 +1,2 @@
+[myservers]
+server1     ansible_host=10.0.0.40  ansible_user=vagrant    ansible_ssh_private_key_file="./.vagrant/machines/web_server/virtualbox/private_key"

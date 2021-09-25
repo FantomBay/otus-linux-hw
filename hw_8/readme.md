@@ -11,4 +11,11 @@
  ---
 ### 1. X IP адресов (с наибольшим кол-вом запросов) с указанием кол-ва запросов c момента последнего запуска скрипта;
 
-Имеем файл-лог: [access.log](./access.log) 
+Имеем файл-лог: [access.log](./access.log)
+нам понадобятся основные утилиты: 
+- grep
+- sed
+- awk
+```
+awk '{print $1}' access.log | uniq -c | sort -nrk 1 | awk 'BEGIN{print"№ count IP"}{print FNR,$1,$2}'| column -t
+```
