@@ -22,3 +22,5 @@
 * [Home work 11 - SELinux.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_11)
 * [Home work 12 - Systemd.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_12)
 * [Home work 13 - Docker.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_13)
+* [Home work 14 - Мониторинг.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_14)
+* [Home work 15 - PAM.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_15)
