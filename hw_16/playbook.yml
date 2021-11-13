@@ -1,0 +1,13 @@
+---
+- name: Install Nginx
+  hosts: nginx
+  become: yes
+
+  roles:
+    - nginx
+
+#- name: rsyslog initial
+#  hosts: nginx
+#  become: yes
+#  roles:
+#    - rsyslog

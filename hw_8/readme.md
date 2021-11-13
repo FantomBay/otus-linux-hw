@@ -11,11 +11,16 @@
  ---
 ### 1. X IP адресов (с наибольшим кол-вом запросов) с указанием кол-ва запросов c момента последнего запуска скрипта;
 
-Имеем файл-лог: [access.log](./access.log)
-нам понадобятся основные утилиты: 
-- grep
-- sed
-- awk
+Для работы потребуется утилита ```mailutils``` (ubuntu), ```mail```(RHEL-os).  
+Для запуска скрипта:
 ```
-awk '{print $1}' access.log | uniq -c | sort -nrk 1 | awk 'BEGIN{print"№ count IP"}{print FNR,$1,$2}'| column -t
+./script.sh LOG_NAME
 ```
+Увидеть результат можно:
+```
+sudo mail
+
+ U   3 student            Чт ноя 11 1 207/10903 NGINX Log Info
+>N   4 student            Сб ноя 13 2 344/9162  NGINX Log Info
+```
+

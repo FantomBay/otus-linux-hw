@@ -1,0 +1,5 @@
+[nginx]
+nginx.server    ansible_host=185.177.93.134 ansible_user=adminroot
+
+[rsyslog]
+rsyslog.server  ansible_host=185.177.93.145

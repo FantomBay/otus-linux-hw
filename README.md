@@ -24,3 +24,4 @@
 * [Home work 13 - Docker.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_13)
 * [Home work 14 - Мониторинг.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_14)
 * [Home work 15 - PAM.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_15)
+* [Home work 16 - Сбор логов.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_16)
