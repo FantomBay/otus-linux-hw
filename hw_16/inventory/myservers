@@ -1,5 +1,5 @@
 [nginx]
-nginx.server    ansible_host=185.177.93.134 ansible_user=adminroot
+nginx.server    ansible_host=192.168.60.10 	ansible_user=vagrant ansible_ssh_pass='vagrant'
 
 [rsyslog]
-rsyslog.server  ansible_host=185.177.93.145
+rsyslog.server  ansible_host=192.168.60.15	ansible_user=vagrant ansible_ssh_pass='vagrant'
