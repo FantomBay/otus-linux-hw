@@ -2,3 +2,14 @@
 # tasks file for rsyslog
 - name: Install rsyslog.
   yum: name=rsyslog state=latest
+
+- name: Set SELinux permissive.
+  selinux:
+    policy: targeted
+    state: permissive
+
+- name: copy file in server
+  copy: src=rsyslog.conf dest=/etc/rsyslog.conf mode=0644
+  notify:
+    - Restart rsyslog in RedHat
+    - Restart rsyslog in Debian
