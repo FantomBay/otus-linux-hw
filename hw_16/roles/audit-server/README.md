@@ -12,8 +12,8 @@ Requirements
 Role Variables
 --------------
 
-Укажите порт, на котором будет слушать auditd (по умолчанию 60)
-remote_port: х
+Укажите порт, на котором будет слушать auditd (по умолчанию 60)  
+```remote_port: х```
 
 Author Information
 ------------------
