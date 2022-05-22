@@ -4,6 +4,7 @@
   become: yes
   roles:
     - nginx
+    - audit-client-nginx
 
 
 - name: rsyslog server
@@ -11,3 +12,4 @@
   become: yes
   roles:
     - rsyslog
+    - audit-server
