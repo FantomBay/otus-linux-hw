@@ -1,0 +1,5 @@
+---
+# handlers file for audit-server
+- name: restart service auditd
+  command: service auditd restart
+  become: true

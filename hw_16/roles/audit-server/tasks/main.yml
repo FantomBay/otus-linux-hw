@@ -1,0 +1,9 @@
+---
+# tasks file for audit-server
+- name: replace line active in file /etc/audit/auditd.conf
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    regexp: '^##tcp_listen_port'
+    line: 'tcp_listen_port = {{ remote_port | default(60) }}'
+  notify: 
+    - restart service auditd

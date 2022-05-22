@@ -1,0 +1,46 @@
+---
+# tasks file for audit-client-nginx
+- name: adding text to the end of the file
+  lineinfile:
+    dest: /etc/audit/rules.d/audit.rules
+    regexp: ''
+    insertafter: EOF
+    line: "\n-w /etc/nginx/nginx.conf -p wa -k nginx_conf\n-w /etc/nginx/default.d/ -p wa -k nginx_conf"
+  notify: 
+    - restart service auditd
+
+
+# Настроим пересылку логов auditd на удаленный хост
+- name: install audispd-plugins
+  yum: name=audispd-plugins state=latest
+
+- name: replace line log_format in file /etc/audit/auditd.conf
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    regexp: '^log_format'
+    line: 'log_format = RAW'
+- name: replace line name_format in file /etc/audit/auditd.conf 
+  lineinfile:
+    dest: /etc/audit/auditd.conf
+    regexp: '^name_format'
+    line: 'name_format = HOSTNAME'
+
+- name: replace line active in file /etc/audisp/plugins.d/au-remote.conf
+  lineinfile:
+    dest: /etc/audisp/plugins.d/au-remote.conf
+    regexp: '^active'
+    line: 'active = yes'
+
+- name: set ip remote server in file /etc/audisp/audisp-remote.conf
+  lineinfile:
+    dest: /etc/audisp/audisp-remote.conf
+    regexp: '^remote_server'
+    line: "remote_server = {{ remote_host }}"
+- name: set port remote server in file /etc/audisp/audisp-remote.conf
+  lineinfile:
+    dest: /etc/audisp/audisp-remote.conf
+    regexp: '^port'
+    line: 'port = {{ remote_port | default(60) }}'
+  notify: 
+    - restart service auditd
+

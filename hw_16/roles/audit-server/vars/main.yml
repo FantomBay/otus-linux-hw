@@ -1,0 +1,3 @@
+---
+# vars file for audit-server-nginx
+remote_port: 60
