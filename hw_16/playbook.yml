@@ -5,6 +5,7 @@
   roles:
     - nginx
     - audit-client-nginx
+    - chronyd
 
 
 - name: rsyslog server
@@ -13,3 +14,4 @@
   roles:
     - rsyslog
     - audit-server
+    - chronyd
