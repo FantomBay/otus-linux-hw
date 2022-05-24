@@ -8,21 +8,21 @@ Kibana - графический интерфейс для работы с БД e
 
 Модели реализации стека elk:
 
-1) простая
+1) простая  
 beats 		|->	elasticsearch	|	kibana
 	---				---			->	---
 logstash	|->	X-Pack (платная)|	X-Pack (платная)	
 
-2) безопасное масштабирование
+2) безопасное масштабирование  
 beats		|-> Logstash		|-> elasticsearch
 
-3) для организации очередей
+3) для организации очередей  
 beats		|-> kafka			|-> Logstash	|->	elasticsearch
 
-4) препроцессинг сообщений
+4) препроцессинг сообщений  
 beats		|->	logstash		|->	Kafka		|-> logstach	|-> elasticsearch
 
-высоко доступный стек
+Высоко доступный стек  
 Host a
 elasticserach	|-> kibana
 Host b
@@ -80,7 +80,23 @@ filebeat test config
 Logstash
 ---
 
-
+Установка logstach:
+```
+yum install logstach -y
+```
+Конфигурация входных данных [/etc/logstash/conf.d/02-beats-input.conf]
+```
+input {
+	beats {
+	port => 5044
+	congestion_threshold => 25
+	}
+}
+```
+где:
+* beats - тип input
+* port - на каком порту слушать?
+* congestion_threshold - ограничение, не более 25 сообщений в секунду (опционально)
 
 Elasticsearch
 ---
