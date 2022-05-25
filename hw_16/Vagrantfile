@@ -12,6 +12,9 @@ Vagrant.configure("2") do |config|
     { :name => "log",
       :ip => "192.168.60.15",
     }
+    { :name => "elastic",
+      :ip => "192.168.60.20",
+    }
   ]
 
   config.vm.provision "shell", inline: <<-SHELL
