@@ -28,4 +28,4 @@
 * [Home work 17 - Архитектура сетей.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_17)(-)
 * [Home work 18 - Бэкапы.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_18)(-)
 * [Home work 19 - DHCP, PXE.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_19)(-)
-* [Home work 20 - iptables.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_20)(-)
+* [Home work 20 - Сценарии iptables.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_20)(-)
