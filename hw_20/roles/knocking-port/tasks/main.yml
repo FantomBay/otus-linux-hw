@@ -1,0 +1,91 @@
+---
+# tasks file for knocking-port
+- name install utils
+  package:
+    name: "{{ item }}"
+    state: latest
+  loop:
+    - iptabels
+    - iptables-services
+    
+  become: yes
+
+- name: Start iptables service
+  service:
+    name: iptables-services
+    state: started
+    enabled: yes
+  become: yes 
+
+# реализация knock-port  
+- name: Create 1-rules for iptables
+  iptables:
+    chain: INPUT
+    jump: TRAFFIC
+    comment: create chain traffic
+  become: yes
+
+- name: Create 2-rules for iptables
+  iptables:
+    chain: TRAFFIC
+    protocol: icmp
+    icmp_type: any
+    jump: ACCEPT
+    comment: allow any icmp traffic
+  become: yes
+
+- name: Create 3-rules for iptables
+  iptables:
+    chain: TRAFFIC
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    comment: allow related and established connections
+  become: yes
+
+- name: Create 4-rules for iptables
+  iptables:
+    chain: TRAFFIC
+    ctstate: NEW
+    protocol: tcp
+    destination_port: 22
+
+- name: Create 5-rules for iptables
+  iptables:
+    chain: TRAFFIC
+    ctstate: NEW
+    protocol: tcp
+
+- name: Create 6-rules for iptables
+  iptables:
+    chain: TRAFFIC
+    ctstate: NEW
+    protocol: tcp
+
+- name: Create 7-rules for iptables
+  iptables:
+    chain: TRAFFIC
+    ctstate: NEW
+    protocol: tcp
+
+- name: Create 8-rules for iptables
+  iptables:
+    chain: TRAFFIC
+    ctstate: NEW
+    protocol: tcp
+
+- name: Create 9-rules for iptables
+  iptables:
+    chain: TRAFFIC
+    ctstate: NEW
+    protocol: tcp
+
+- name: Create 10-rules for iptables
+
+
+- name: Create 11-rules for iptables
+
+
+- name: Create 12-rules for iptables
+
+
+- name: Create 13-rules for iptables
