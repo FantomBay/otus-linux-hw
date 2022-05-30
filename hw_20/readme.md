@@ -21,7 +21,7 @@
  - удаленная ВМ (жертва наших экспериметов)
  - iptabels
  - iptables-services
- - модуль iptables recent
+ - модуль iptables recent (обычно уже имеется в стандартном пакете iptables)
 
 Решение:
 
@@ -76,4 +76,44 @@ done
 chmod + x knock.sh && ./knock.sh 192.168.60.10 8881 7777 9991
 ```
 
-После этого у нас имеется ~30 секунд для подключения (в течении ~30 секунд порт будет открыт для того(ip), кто правильно постучался).
+После этого у нас имеется ~30 секунд для подключения (в течении ~30 секунд порт будет открыт для того(ip), c которого правильно постучались).
+
+<details>
+ <summary> Вывод </summary>
+  ```
+  long console output here
+  ```
+</details>
+
+---
+2. добавить inetRouter2, который виден(маршрутизируется (host-only тип сети для виртуалки)) с хоста или форвардится порт через локалхост.
+---
+
+Требуется:
+ - 2 ВМ  
+
+Решение:  
+
+На 1 ВМ включим проброс портов (forwarding ports) на уровне ядра:
+
+```bash
+$ echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
+```
+
+Что бы настройка сохранилась после перезагрузки, изменим параметр ядра:
+```bash
+sudo sysctl -w net.ipv4.ip_forward=1
+```
+Для проброcа пакетов через хост имеется цепочка FORWARD:
+```
+sudo iptables -A FORWARD -i eth0 -o eth1 -p tcp --syn --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+```
+
+<details>
+ <summary> Вывод </summary>
+  
+  ```
+  long console output here
+  ```
+  
+</details>
