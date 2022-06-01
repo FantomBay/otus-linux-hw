@@ -26,34 +26,19 @@
   become: yes
 
 - name: Create 2-rules for iptables
-  iptables:
-    chain: TRAFFIC
-    protocol: icmp
-    icmp_type: any
-    jump: ACCEPT
-    comment: allow any icmp traffic
-  become: yes
-
+  iptables: chain=TRAFFIC protocol=icmp icmp_type=any jump=ACCEPT
+#-A TRAFFIC -m state --state ESTABLISHED,RELATED -j ACCEPT
 - name: Create 3-rules for iptables
-  iptables:
-    chain: TRAFFIC
-    ctstate: ESTABLISHED,RELATED
-    jump: ACCEPT
-    comment: allow related and established connections
-  become: yes
-
+  iptables: chain=TRAFFIC ctstate=ESTABLISHED,RELATED jump=ACCEPT 
+#-A TRAFFIC -m state --state NEW -m tcp -p tcp --dport 22 -m recent --rcheck --seconds 30 --name SSH2 -j ACCEPT
 - name: Create 4-rules for iptables
-  iptables:
-    chain: TRAFFIC
-    ctstate: NEW
-    protocol: tcp
-    destination_port: 22
-
+  iptables: chain=TRAFFIC ctstate=NEW protocol=tcp destination_port=22 match=recent match_set="--rcheck --seconds 30 --name SSH2" jump=ACCEPT
+#-A TRAFFIC -m state --state NEW -m tcp -p tcp -m recent --name SSH2 --remove -j DROP
 - name: Create 5-rules for iptables
-  iptables:
-    chain: TRAFFIC
-    ctstate: NEW
-    protocol: tcp
+  iptables: chain=TRAFFIC ctstate=NEW protocol=tcp 
+  
+    
+    
 
 - name: Create 6-rules for iptables
   iptables:

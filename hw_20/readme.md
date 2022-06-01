@@ -115,5 +115,35 @@ sudo iptables -A FORWARD -i eth0 -o eth1 -p tcp --syn --dport 80 -m conntrack --
   ```
   long console output here
   ```
-  
+
 </details>
+
+
+
+
+3. 
+
+
+4. 
+
+на шлюзе указать правило nat PREROUTING 
+
+
+
+
+
+
+---
+
+Для информации:
+*snat - это правило подменяющее исходящий адресс на свой (был 192.168.. стал 97.17...)
+MASQ - процесс подмены заголовка у пакета - NAT
+*dnat - меняет конечный адресс получателя на 
+
+
+Детальный man по iptables - iptables-extensions
+
+iptables -A -(add) добавить правило в конец iptables
+iptables -I -(insert) добавить правило в начало iptables
+
+ipset - утилита позволяющая оперировать большим набором ip адресов  (т.е. можно кучу ip обозвать одним именем и использовать в iptables просто это имя а не перечислять в правиле кучу ip)
