@@ -1,30 +1,29 @@
 ---
 # tasks file for knocking-port
-- name install utils
-  package:
-    name: "{{ item }}"
-    state: latest
-  loop:
-    - iptabels
-    - iptables-services
-    
+- name: install utils
   become: yes
+  yum:
+    state: present
+    name:
+      - iptables
+      - iptables-services
 
 - name: Start iptables service
   service:
-    name: iptables-services
+    name: iptables
     state: started
     enabled: yes
   become: yes 
 
-# реализация knock-port  
-- name: Create 1-rules for iptables
-  iptables:
-    chain: INPUT
-    jump: TRAFFIC
-    comment: create chain traffic
-  become: yes
+# реализация knock-port
+#add chains
+#- name: Create the TRAFFIC chain
+#  shell: iptables --new-chain TRAFFIC
 
+#-A INPUT -j TRAFFIC
+- name: Create 1-rules for iptables
+  iptables: chain=INPUT jump=TRAFFIC
+#-A TRAFFIC -p icmp --icmp-type any -j ACCEPT
 - name: Create 2-rules for iptables
   iptables: chain=TRAFFIC protocol=icmp icmp_type=any jump=ACCEPT
 #-A TRAFFIC -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -35,42 +34,33 @@
   iptables: chain=TRAFFIC ctstate=NEW protocol=tcp destination_port=22 match=recent match_set="--rcheck --seconds 30 --name SSH2" jump=ACCEPT
 #-A TRAFFIC -m state --state NEW -m tcp -p tcp -m recent --name SSH2 --remove -j DROP
 - name: Create 5-rules for iptables
-  iptables: chain=TRAFFIC ctstate=NEW protocol=tcp 
-  
-    
-    
-
+  iptables: chain=TRAFFIC ctstate=NEW match=tcp protocol=tcp match=recent match_set="--name SSH2 --remove" jump=ACCEPT
+#-A TRAFFIC -m state --state NEW -m tcp -p tcp --dport 9991 -m recent --rcheck --name SSH1 -j SSH-INPUTTWO
 - name: Create 6-rules for iptables
-  iptables:
-    chain: TRAFFIC
-    ctstate: NEW
-    protocol: tcp
-
+  iptables: chain=TRAFFIC ctstate=NEW match=tcp protocol=tcp match_set="--dport 9991" match=recent match_set="--rcheck --name SSH1" jump=SSH-INPUTTWO
+#-A TRAFFIC -m state --state NEW -m tcp -p tcp -m recent --name SSH1 --remove -j DROP
 - name: Create 7-rules for iptables
-  iptables:
-    chain: TRAFFIC
-    ctstate: NEW
-    protocol: tcp
-
+  iptables: chain=TRAFFIC ctstate=NEW match=tcp protocol=tcp match=recent match_set="--name SSH1 --remove" jump=DROP
+#-A TRAFFIC -m state --state NEW -m tcp -p tcp --dport 7777 -m recent --rcheck --name SSH0 -j SSH-INPUT
 - name: Create 8-rules for iptables
-  iptables:
-    chain: TRAFFIC
-    ctstate: NEW
-    protocol: tcp
-
+  iptables: chain=TRAFFIC ctstate=NEW match=tcp protocol=tcp match_set="--dport 7777" match=recent match_set="--rcheck --name SSH0" jump=SSH-INPUT
+#-A TRAFFIC -m state --state NEW -m tcp -p tcp -m recent --name SSH0 --remove -j DROP
 - name: Create 9-rules for iptables
-  iptables:
-    chain: TRAFFIC
-    ctstate: NEW
-    protocol: tcp
-
+  iptables: chain=TRAFFIC ctstate=NEW match=tcp protocol=tcp match=recent match_set="--name SSH0 --remove" jump=DROP
+#-A TRAFFIC -m state --state NEW -m tcp -p tcp --dport 8881 -m recent --name SSH0 --set -j DROP
 - name: Create 10-rules for iptables
-
-
+  iptables: chain=TRAFFIC ctstate=NEW match=tcp protocol=tcp destination_port=8881 match=recent match_set="--name SSH0 --set" jump=DROP
+#-A SSH-INPUT -m recent --name SSH1 --set -j DROP
 - name: Create 11-rules for iptables
-
-
+  iptables: chain=SSH-INPUT match=recent match_set="--name SSH1 --set" jump=DROP
+#-A SSH-INPUTTWO -m recent --name SSH2 --set -j DROP
 - name: Create 12-rules for iptables
-
-
+  iptables: chain=SSH-INPUTTWO match=recent match_set="--name SSH2 --set" jump=DROP
+#-A TRAFFIC -j DROP
 - name: Create 13-rules for iptables
+  iptables: chain=TRAFFIC jump=DROP
+
+#Restart IPtables
+- name: restart iptables
+  become: yes
+  service: name=iptables enabled=yes state=restarted

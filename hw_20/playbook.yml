@@ -1,0 +1,13 @@
+---
+- name: server1 
+  hosts: server1
+  become: yes
+  roles:
+    - knocking-port
+
+
+
+- name: server2
+  hosts: server2
+  become: yes
+  roles:
