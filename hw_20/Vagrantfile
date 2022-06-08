@@ -1,38 +1,50 @@
-Vagrant.configure("2") do |config|
-  config.vm.box = "centos/7"
-  config.vm.provider :virtualbox do |v|
-    v.memory = 512
-    v.cpus = 1
-  end
-  # Define two VMs with static private IP addresses.
-  boxes = [
-    { :name => "server1",
-      :ip => "192.168.60.10",
-    },
-    {
-      :name => "server2",
-      :ip => "192.168.60.15",
-    }
-  ]
-
-  config.vm.provision "shell", inline: <<-SHELL
-    mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
-    sed -i '65s/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-    systemctl restart sshd
-  SHELL
-
-  boxes.each do |opts|
-    config.vm.define opts[:name] do |config|
-      config.vm.hostname = opts[:name]
-      config.vm.network "private_network", ip: opts[:ip]
-
-#      if opts[:name] == boxes.last[:name]
-#        config.vm.provision "ansible" do |ansible|
-#          ansible.playbook = "playbook.yml"
-#          ansible.inventory_path = "inventory/myservers"
-#          ansible.limit = "all"
-#        end
-#      end
+Vagrant.configure(2) do |config|
+    config.vm.box = "centos/7"
+    config.vm.box_check_update = false
+    config.ssh.insert_key = false
+  
+    # ПЕРВАЯ ВИРТУАЛЬНАЯ МАШИНА
+    config.vm.define "inetRouter" do |subconfig|
+      subconfig.vm.provider "virtualbox" do |vb|
+        vb.name = "inet-Router"
+      end
+      subconfig.vm.hostname = "inet-Router"
+      subconfig.vm.network "private_network", ip: "192.168.53.3"
     end
+  
+    # ВТОРАЯ ВИРТУАЛЬНАЯ МАШИНА
+    config.vm.define "inetRouter2" do |subconfig|
+      subconfig.vm.provider "virtualbox" do |vb|
+        vb.name = "inet-Router2"
+      end
+      subconfig.vm.hostname = "inet-Router2"
+      subconfig.vm.network "private_network", ip: "192.168.53.4"
+    end
+
+    # ТРЕТЬЯ ВИРТУАЛЬНАЯ МАШИНА
+    config.vm.define "centralRouter" do |subconfig|
+        subconfig.vm.provider "virtualbox" do |vb|
+          vb.name = "central-Router"
+        end
+        subconfig.vm.hostname = "central-Router"
+        subconfig.vm.network "private_network", ip: "192.168.53.5"
+        subconfig.vm.network "private_network", ip: "192.168.55.5"
+    end
+
+    # ЧЕТВЕРТАЯ ВИРТУАЛЬНАЯ МАШИНА
+    config.vm.define "centralServer" do |subconfig|
+        subconfig.vm.provider "virtualbox" do |vb|
+          vb.name = "central-Server"
+        end
+        subconfig.vm.hostname = "central-Server"
+        subconfig.vm.network "private_network", ip: "192.168.55.6"
+    end
+
+    config.vm.provision "shell", inline: <<-SHELL
+        mkdir -p ~root/.ssh; cp ~vagrant/.ssh/auth* ~root/.ssh
+        sed -i '65s/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+        systemctl restart sshd
+        yum install iptables-services -y
+    SHELL
+ 
   end
-end

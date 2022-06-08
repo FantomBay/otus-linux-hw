@@ -61,6 +61,6 @@
   iptables: chain=TRAFFIC jump=DROP
 
 #Restart IPtables
-- name: restart iptables
-  become: yes
-  service: name=iptables enabled=yes state=restarted
+#- name: restart iptables
+#  become: yes
+#  service: name=iptables enabled=yes state=restarted

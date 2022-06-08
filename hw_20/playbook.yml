@@ -1,13 +1,25 @@
 ---
-- name: server1 
-  hosts: server1
+- name: inet-Router 
+  hosts: inet-Router
   become: yes
   roles:
-    - knocking-port
 
 
-
-- name: server2
-  hosts: server2
+- name: inet-Router2
+  hosts: inet-Router2
   become: yes
   roles:
+
+
+  - name: central-Router
+  hosts: central-Router
+  become: yes
+  roles:
+
+
+  - name: central-Server
+  hosts: central-Server
+  become: yes
+  roles:
+    - nginx
+
