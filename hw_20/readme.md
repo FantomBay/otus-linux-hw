@@ -123,6 +123,13 @@ sudo iptables -A FORWARD -i eth0 -o eth1 -p tcp --syn --dport 80 -m conntrack --
 </details>
 
 
+Запросы с порта 8080 сразу перекидываются на соседний хост
+[root@inet-Router2 ~]# iptables -t nat -A PREROUTING -i eth1 -p tcp --dport 8080 -j DNAT --to-destination 192.168.53.5
+
+Далее на центральном роутере пробрасываем все пакеты на centralServer c 8080 порта на 80
+[root@central-Router ~]# iptables -t nat -A PREROUTING -p tcp -d 192.168.53.5 --dport 8080 -j DNAT --to-destination 192.168.55.6:80
+
+iptables -t nat -A POSTROUTING -p tcp -d 192.168.55.6 --dport 80 -j SNAT --to-source 192.168.53.4:8080
 
 
 3. 
@@ -131,6 +138,7 @@ sudo iptables -A FORWARD -i eth0 -o eth1 -p tcp --syn --dport 80 -m conntrack --
 4. 
 
 на шлюзе указать правило nat PREROUTING 
+-A PREROUTING -d 192.168.53.4/32 -p tcp -m tcp --dport 8080 -j DNAT --to-destination 192.168.55.6:80
 
 
 

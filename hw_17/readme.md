@@ -4,7 +4,11 @@
 
 Дано (https://github.com/erlong15/otus-linux/tree/network) 
 
+Схема сетей:
 ![Lab](images/Lab.png)
+
+Упрощеная схема для нашего стенда:
+![Lab](images/schemeNet.png)
 
 Итого должны получится следующие сервера:
 
@@ -15,7 +19,6 @@
 *    centralServer
 *    office1Server
 *    office2Server
-
 
 
 ### Теоретическая часть
@@ -106,3 +109,14 @@ Broadcast:	192.168.0.127
 ---
 
 ## Практическая часть
+
+Для реализации нам потребуется:
+1. Включить на всех маршрутизаторах (OR1 OR2 CR IR) возможность проброски пакетов 
+
+```
+sysctl net.ipv4.conf.all.forwarding=1
+и что бы запомнить после перезагрузки:
+echo "net.ipv4.conf.all.forwarding=1" >> /etc/sysctl.conf
+```
+
+2. 
