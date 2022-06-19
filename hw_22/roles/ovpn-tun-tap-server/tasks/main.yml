@@ -1,0 +1,32 @@
+---
+# tasks file for ovpn-tun-tap-server
+- name: устанавливаем epel репозиторий
+  yum:
+    name: epel-release
+
+- name: устанавливаем пакет openvpn, easy-rsa и iperf3
+  yum:
+    name:
+        - easy-rsa
+        - openvpn 
+        - iperf3
+
+- name: Отключаем SELinux
+  selinux:
+    policy: targeted
+    state: permissive
+
+- name: создаём файл-ключ
+  shell: /bin/bash/openvpn --genkey --secret /etc/openvpn/static.key
+
+- name: создаём конфигурационный файл vpn-сервера
+  copy:
+    src: server.conf
+    dest: /etc/openvpn/server.conf
+
+- name: Запускаем openvpn сервер и добавляем в автозагрузку
+  service:  
+    name: openvpn@server
+    state: started
+    enabled: yes
+  

@@ -1,0 +1,12 @@
+---
+- name: server
+  hosts: server
+  become: yes
+  roles:
+    - ovpn-tun-tap-server
+
+- name: client 
+  hosts: client
+  become: yes
+  roles:
+    - ovpn-tun-tap-client
