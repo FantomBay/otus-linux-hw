@@ -16,15 +16,22 @@
     src: server.conf
     dest: /etc/openvpn/server.conf
 
-- name: скопировать файл-ключ static.key, который был создан на сервере
-  synchronize:
-    src: /etc/openvpn/static.key
-    dst: /etc/openvpn/static.key
-  
+#- name: скопировать файл-ключ static.key, который был создан на сервере
+#  synchronize:
+#    src: /etc/openvpn/static.key
+#    dest: /etc/openvpn/static.key
+#    mode: pull
+#  delegate_to: client
 
-- name: Запускаем openvpn сервер и добавляем в автозагрузку
-  service:  
-    name: openvpn@server
-    state: started
-    enabled: yes
+- name: скопируем файл ключа
+  copy: 
+    src:  /tmp/static.key-server
+    dest: /etc/openvpn/static.key
+    mode: 0600
+
+- name: скопируем файл ключа
+  copy: 
+    src:  /tmp/server.conf-server
+    dest: /etc/openvpn/server.conf
+    mode: 0644
   
