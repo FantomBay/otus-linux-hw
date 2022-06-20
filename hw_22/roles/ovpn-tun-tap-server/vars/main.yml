@@ -1,2 +1,5 @@
 ---
 # vars file for ovpn-tun-tap-server
+#2 значения tun или tap
+type: tap
+#type: tun
