@@ -1,0 +1,71 @@
+---
+# tasks file for openvpn-server
+- name: Установим epel-release
+  package:
+    name: epel-release
+
+- name: Устанавливаем необходимые пакеты
+  package:
+    name: 
+      - openvpn
+      - easy-rsa
+
+- name: узнаем версиию easy-rsa
+  shell: yum list installed | grep easy-rsa | awk '{print $2}' | awk -F "-" '{ print $1 }'
+  register: output_easyrsa_version
+- name: Установим переменной easyrsa_version вирсию пакета
+  set_fact: easyrsa_version="{{ output_easyrsa_version.stdout }}"
+
+
+- debug:
+    msg: "Значение переменной: {{ easyrsa_version }}" 
+
+- name: Инициализируем pki
+  shell: /usr/share/easy-rsa/{{ easyrsa_version }}/easyrsa init-pki chdir=/etc/openvpn/ 
+  
+#    cmd: /usr/share/easy-rsa/{{ easyrsa_version }}/easyrsa init-pki
+#    chdir: /etc/openvpn/
+
+- name: Сгенерируем необходимые ключи и сертификаты для сервера
+  shell: chdir=/etc/openvpn/ {{ item }}
+  with_items:
+  - echo 'rasvpn' | /usr/share/easy-rsa/{{ easyrsa_version }}/easyrsa build-ca nopass
+  - echo 'rasvpn' | /usr/share/easy-rsa/{{ easyrsa_version }}/easyrsa gen-req server nopass
+  - echo 'yes' | /usr/share/easy-rsa/{{ easyrsa_version }}/easyrsa sign-req server server
+  - /usr/share/easy-rsa/{{ easyrsa_version }}/easyrsa gen-dh
+  - openvpn --genkey --secret ta.key
+
+- name: Сгенерируем сертификаты для клиента
+  command: chdir=/etc/openvpn/ {{ item }} 
+  with_items:
+  - echo 'client' | /usr/share/easy-rsa/3/easyrsa gen-req client nopass
+  - echo 'yes' | /usr/share/easy-rsa/3/easyrsa sign-req client
+
+- name: Создадим конфигурационный файл
+  copy:
+    src: server.conf
+    dest: /etc/openvpn/server.conf
+
+- name: Зададим параметр iroute для клиента
+  shell: echo 'iroute 192.168.33.0 255.255.255.0' > /etc/openvpn/client/client
+
+- name: Запускаем openvpn сервер и добавляем в автозагрузку
+  service:  
+    name: openvpn@server
+    state: started
+    enabled: yes
+
+- name: Скопируем следующие файлы сертификатов и ключ для клиента на хост-машину
+  fetch:
+    src: "{{ item }}"
+    dest: /tmp/
+  with_items:
+    - /etc/openvpn/pki/ca.crt
+    - /etc/openvpn/pki/issued/client.crt
+    - /etc/openvpn/pki/private/client.key
+
+- name: Создадим конфигурационны файл клиента client.conf на хост-машине
+  copy:
+    src: client.conf
+    dest: /tmp/fetched/
+  delegate_to: 127.0.0.1

@@ -1,0 +1,4 @@
+---
+# vars file for openvpn-server
+easyrsa_version:
+  shell: yum list installed | grep easy-rsa | awk '{print $2}' | awk -F "-" '{ print $1 }'

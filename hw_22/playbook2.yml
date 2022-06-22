@@ -1,0 +1,6 @@
+---
+- name: server
+  hosts: server
+  become: yes
+  roles:
+    - openvpn-server
