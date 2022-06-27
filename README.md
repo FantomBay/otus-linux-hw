@@ -31,3 +31,6 @@
 * [Home work 20 - Сценарии iptables.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_20)(-)
 * [Home work 21 - OSPF.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_21)(-)
 * [Home work 22 - Мосты, туннели и VPN.](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_22)(-)
+* [Home work 23 - DNS, split-dns](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_23)(-)
+* [Home work 24 - VLAN's LACP](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_24)(-)
+* [Home work 25 - LDAP, FreeIPA](https://github.com/FantomBay/otus-linux-hw/tree/master/hw_25)(-)

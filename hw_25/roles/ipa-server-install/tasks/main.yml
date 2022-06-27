@@ -1,0 +1,13 @@
+---
+# tasks file for ipa-server-install
+- name: install ipa-server Centos-7
+  package: name=ipa-server 
+
+- name: изменим хостнейм ВМ
+  command: hostnamectl set-hostname {{ hostname }}
+
+- name: добавим хост в файл /etc/hosts
+  command: sed -i -e '$10.0.0.20 freeipa.otus.local' /etc/hosts
+
+- name: запустим скрипт настройки ipa-server
+  command: ipa-server-install --setup-dns
